@@ -11,7 +11,7 @@ export const defaultSetting = {
 }
 
 export const defaultMessage = `Powered by OpenAI Vercel
-- 本站对接chatgpt 单不提供key,请自行填写 apikey`
+- 本站对接chatgpt 但不提供key,请自行填写 apikey`
 
 export type Setting = typeof defaultSetting
 

@@ -1,7 +1,7 @@
 import { createEffect, createSignal, For, onMount, Show } from "solid-js"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import MessageItem from "./MessageItem"
-import type { ChatMessage } from "~/types"
+import type { ChatMessage, PromptItem } from "~/types"
 import SettingAction from "./SettingAction"
 import PromptList from "./PromptList"
 import { Fzf } from "fzf"
@@ -9,11 +9,6 @@ import throttle from "just-throttle"
 import { isMobile } from "~/utils"
 import type { Setting } from "~/system"
 import { makeEventListener } from "@solid-primitives/event-listener"
-
-export interface PromptItem {
-  desc: string
-  prompt: string
-}
 
 export default function (props: {
   prompts: PromptItem[]
@@ -46,7 +41,7 @@ export default function (props: {
     special: "default"
   }
   const fzf = new Fzf(props.prompts, {
-    selector: k => `${k.desc} (${k.prompt})`
+    selector: k => `${k.desc}||${k.prompt}`
   })
   const [height, setHeight] = createSignal("48px")
   const [compositionend, setCompositionend] = createSignal(true)
@@ -214,7 +209,7 @@ export default function (props: {
     } catch (error: any) {
       setLoading(false)
       setController()
-      if (!error.message.includes("aborted a request"))
+      if (!error.message.includes("abort"))
         setMessageList([
           ...messageList(),
           {
@@ -312,7 +307,13 @@ export default function (props: {
       if (value === "/" || value === " ")
         return setCompatiblePrompt(props.prompts)
       const query = value.replace(/^[\/ ](.*)/, "$1")
-      if (query !== value) setCompatiblePrompt(fzf.find(query).map(k => k.item))
+      if (query !== value)
+        setCompatiblePrompt(
+          fzf.find(query).map(k => ({
+            ...k.item,
+            positions: k.positions
+          }))
+        )
     },
     250,
     {
@@ -432,11 +433,11 @@ export default function (props: {
                     if (
                       e.key === "ArrowUp" ||
                       e.key === "ArrowDown" ||
-                      e.key === "Enter"
+                      e.keyCode === 13
                     ) {
                       e.preventDefault()
                     }
-                  } else if (e.key === "Enter") {
+                  } else if (e.keyCode === 13) {
                     if (!e.shiftKey) {
                       e.preventDefault()
                       sendMessage()
